@@ -1,0 +1,418 @@
+set all tabs to lazy as we fixed earlier --done
+change the table pput achieved done -- done
+put card in the tabs too -- done
+Team Report:
+    first use logged in user uuid to get his profile using his email with Tenant Employee
+    then get either his coporate or division use that uuid to get his team report
+Inividyal report:r
+    use upline email to get there id and name like a drp down so u can get individual Report
+
+
+put handle err0or
+Error Message function has bugs
+
+The Tabs Has To Be Autheticated user_types
+
+
+u cant rate a task that has not been submmited
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//start of objetive.tsx
+
+
+
+import { useEffect } from "react";
+import {
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Tag,
+  Box,
+  Text,
+  Button,
+  Flex,
+  Stack,Select,
+  Tabs,TabList,Tab,TabPanel,TabPanels,
+} from "@chakra-ui/react";
+import { useErrorHandler } from "react-error-boundary";
+import { HiOutlinePlus } from "react-icons/hi";
+import AddObjective from "../../drawers/AddObjective";
+import CustomDrawer from "../../drawers/CustomDrawer";
+import { useAppDispatch, useAppSelector } from "../../redux/hooks";
+import { getObjectives } from "../../redux/objective/objectiveAPI";
+import { selectObjective } from "../../redux/objective/objectiveSlice";
+import { v4 as uuid_v4 } from "uuid";
+import UploadObjectives from "../../drawers/UploadObjective";
+import { useState } from "react";
+import { GrFormNextLink,GrFormPreviousLink } from "react-icons/gr";
+import { Objective as ObjectiveType} from "../../redux/objective/objectiveSlice"
+import ObjectiveDetails from "../../drawers/ObjectiveDrawer";
+import {weekGetter} from "../../services/extraFunctions";
+interface ownerObjectType{
+  full_name:string;
+  email:string
+}
+interface ownersofObjectiveStateInterface{
+  'list_of_owners':ownerObjectType[];
+  'current_owner':string;
+  'ShouldFilter':boolean;
+}
+
+const ObjectiveTable:React.FC<{
+  objectives:any,
+  status:string,
+  ownersofObjective:ownersofObjectiveStateInterface,
+  currentTabNumber:number
+}>=({objectives,status,ownersofObjective,
+  currentTabNumber,
+})=>{
+
+
+  return (
+    <>
+          <Table size="sm" variant="unstyled" borderRadius="lg" overflow="hidden">
+        <Thead bg="secondary.200">
+          <Tr>
+            <Th py="6">Objective</Th>
+            <Th>Owner/Team</Th>
+            <Th>Duration</Th>
+            <Th>Routine Options</Th>
+            <Th>Rountine Count</Th>
+            <Th></Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {status === "loading" ? (
+            <Tr>
+              <Td>
+                <Text>Loading...</Text>
+              </Td>
+            </Tr>
+          ) : !objectives.length ? (
+            <Tr>
+              <Td>
+                <Text>No Objectives found. Please create/upload Objective</Text>
+              </Td>
+            </Tr>
+          ) : (
+            objectives.filter((data:ObjectiveType)=>{
+              type statusType= "pending"|"active"|"closed";
+              var status:statusType;
+              status='active'
+              
+              if(currentTabNumber==0){
+                status =  'pending'
+              }
+              if(currentTabNumber==1){
+                status =  'active'
+              }
+              if(currentTabNumber==2){
+                status =  'closed'
+              }   
+
+              return data.objective_status==status
+            }).filter((data:ObjectiveType)=>{
+              if(ownersofObjective.current_owner){
+                return  data.owner.email==ownersofObjective.current_owner
+              }
+              return true
+            }).map((objective:ObjectiveType) => {
+
+
+
+                if(objective){
+
+                  return (
+                    (
+                      <Tr key={uuid_v4()}>
+                        <Td>
+                          <Text mb="2">{objective.name}</Text>
+                        </Td>
+                        <Td>{objective.owner.email?objective.owner.email:""}</Td>
+            <Td>{weekGetter({"startDate":objective.start_date,"endDate":objective.end_date})}</Td>
+                        <Td textTransform="capitalize">{objective.routine_option}</Td>
+                        <Td>{objective.routine_round}</Td>
+                        <Td>
+                          {/* <Button size="sm">View</Button> */}
+                          <CustomDrawer showModalBtnText="View" drawerSize="xl">
+                            <ObjectiveDetails {...objective} />
+                          </CustomDrawer>
+                        </Td>
+                      </Tr>
+                    )
+                  )
+                }
+
+
+                return ""
+
+            })
+          )}
+        </Tbody>
+      </Table>
+    
+    </>
+  )
+}
+
+
+
+const Objectives = () => {
+  const dispatch = useAppDispatch();
+  const [TabIndex,setTabIndex]= useState<number>(0)
+  const [ownersofObjective,setOwnersofObjective]=useState<ownersofObjectiveStateInterface>(
+    {
+      'list_of_owners':[],
+      //the defualt means all
+      'current_owner':"",
+      //this means don't filter once it true then we can filter
+      'ShouldFilter':false,
+    }
+  )
+    //pagination states
+    const [pageNum,setPageNum] = useState(1);
+    //end pagination states
+  const { status, objectives,
+     count:NumOfData,
+    next:nextPage,previous:previousPage
+    
+  } = useAppSelector(selectObjective);
+
+  const handleError= useErrorHandler()
+
+  useEffect(() => {
+    const ORG_NAME = localStorage.getItem("current_organization_short_name");
+    if (ORG_NAME) {
+      dispatch(getObjectives({ORG_NAME,"pagenum":pageNum,handleError}));
+    }
+  }, [dispatch,pageNum]);
+  useEffect(()=>{
+
+    if(status==="succeeded"){
+      setOwnersofObjective({...ownersofObjective,"list_of_owners":[...objectives.map((data:any)=>{
+          return {
+            "full_name":data.owner.first_name +" "+data.owner.last_name,
+            "email":data.owner.email
+          }
+      }
+      
+      )]})
+    }
+  },[status])
+
+  useEffect(()=>{
+    //here we monitoring the tabIndex
+    const ORG_NAME = localStorage.getItem("current_organization_short_name");
+    if (!ORG_NAME) return
+    const statusObject:any={
+      0:"pending",
+      1:"active",
+      2:'closed', 
+    }
+      dispatch(getObjectives({ORG_NAME,"pagenum":pageNum,handleError,filterByStatus:`initiative_status=${statusObject[TabIndex]}`}));
+    
+
+
+  },[TabIndex])
+  console.log('status',status)
+  console.log("what us here",objectives)
+  console.log("my owners of Objective",ownersofObjective)
+  return (
+    <Box>
+      <Flex justifyContent="space-between" alignItems="center" mb="4">
+        <Text
+          as="small"
+          display="inline-block"
+          fontWeight="semibold"
+          alignSelf="flex-end"
+        >
+          {/* Showing 10 of 40  */}
+          Showing {objectives.length!==0?objectives.length:0} of {NumOfData?NumOfData:0} Objectives
+
+        </Text>
+
+
+       
+
+
+
+        <Stack direction="row" spacing={4}>
+          <CustomDrawer
+            showModalBtnText="Add New Objective"
+            showModalBtnVariant="primary"
+            showModalBtnColor="white"
+            leftIcon={<HiOutlinePlus />}
+            drawerSize="sm"
+          >
+            <AddObjective />
+          </CustomDrawer>
+          <CustomDrawer
+            showModalBtnText="Upload Objective"
+            showModalBtnVariant="outline"
+            showModalBtnColor="primary"
+            leftIcon={<HiOutlinePlus />}
+          >
+            <UploadObjectives/>
+          </CustomDrawer>
+        </Stack>
+      </Flex>
+
+
+
+
+      <Tabs 
+      isLazy
+      defaultIndex={1}
+      colorScheme='blue'
+      isFitted variant='enclosed' onChange={(currenttabIndex)=>setTabIndex(currenttabIndex)}>
+  <TabList mb='1em' >
+    <Tab >Pending</Tab>{/* tabIndex = 0 */}
+    <Tab>Active</Tab>{/* tabIndex = 1*/}
+    <Tab>Closed</Tab>{/* tabIndex = 2 */}
+
+    
+  </TabList>
+
+  <TabPanels>
+     
+
+
+{
+        [... new Array(7)].map(i=>
+          <TabPanel>
+          {/* navigate up to see the table */}
+            {/* 
+            pending -0 represtents Pending
+            */}
+           <ObjectiveTable
+            objectives={objectives}
+            status={status}
+            ownersofObjective={ownersofObjective}
+            currentTabNumber={TabIndex}
+          />
+          </TabPanel>
+          )
+      }
+
+
+  </TabPanels>
+
+  </Tabs>
+
+
+
+
+
+
+
+
+      <Button disabled={!previousPage}
+onClick={(e)=>setPageNum(pageNum==1?1:pageNum-1)}
+leftIcon={ <GrFormPreviousLink/>}></Button>
+
+<Button disabled={!nextPage}leftIcon={<GrFormNextLink/>}
+onClick={(e)=>setPageNum(pageNum+1)}></Button>
+    
+    </Box>
+  );
+};
+
+export default Objectives;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//start of objective api
+
+import { createAsyncThunk } from "@reduxjs/toolkit";
+import { AddObjectiveInputs } from "../../drawers/AddObjective";
+import axios from "../../services/api";
+import moment from "moment";
+
+
+export const getObjectives = createAsyncThunk(
+  "objective/getObjectives",
+  async ({ORG_NAME,pagenum=1,handleError,filterByStatus='initiative_status=active'}:{ORG_NAME: string,pagenum?:number,handleError:any,filterByStatus?:string}) => {
+    try {
+      let url =`/client/${ORG_NAME}/objective/?page=${pagenum}`
+      //?initiative_status
+      let urlWithFilterByStatus=`/client/${ORG_NAME}/objective/?${filterByStatus}?page=${pagenum}`
+      const response = await axios.get(filterByStatus?urlWithFilterByStatus:url);
+      console.log("Objectives", response.data);
+      return response.data;
+    } catch (err: any) {
+      console.log("obj err", err);
+      handleError(err)
+      return err.response;
+    }
+  }
+);
+
+export const addObjective = createAsyncThunk(
+  "objective/addObjective",
+  async ({data, ORG_NAME}: { ORG_NAME: string; data: AddObjectiveInputs },thunk) => {
+    // i need to reformat the date with moment.js
+    let newLyupdatedData = {...data}
+    if(data.start_date){
+      //here we reformatting only start_date
+      newLyupdatedData={...newLyupdatedData,start_date:moment(newLyupdatedData.start_date).format("YYYY-MM-DD")}
+    }
+
+    if(data.end_date){
+      //here we reformatting only start_date
+      newLyupdatedData={...newLyupdatedData,end_date:moment(newLyupdatedData.end_date).format("YYYY-MM-DD")}
+    }
+    try {
+      const response = await axios.post(
+        `/client/${ORG_NAME}/objective/`,
+        newLyupdatedData
+      );
+      console.log("One Objective", response.data);
+      let resp_data:any
+      resp_data = response.data.data
+      return resp_data ;
+    } catch (err: any) {
+      console.log("obj err", err);
+      // let error:any
+      return thunk.rejectWithValue(err.response.data) ;
+    }
+  }
+);

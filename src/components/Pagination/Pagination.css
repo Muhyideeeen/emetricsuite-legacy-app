@@ -1,0 +1,33 @@
+/* am using css cus the libary for pagination does not support styled component */
+
+
+
+.pagination{
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    margin: 1rem 0;
+    font-size: 1.2rem;
+    gap: 10px;
+  }
+  
+  .pagination .page-num{
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-weight: 400;
+    transition: all .5s ease-in-out;
+  }
+  
+  
+  .pagination .page-num:hover{
+    background-color: #0B317826;
+    color: whitesmoke;
+  }
+  
+  
+  .pagination .active{
+    background-color:#0B3178;
+    color: whitesmoke;
+  
+  }

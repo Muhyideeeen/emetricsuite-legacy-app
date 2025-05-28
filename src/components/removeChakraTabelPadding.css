@@ -1,0 +1,6 @@
+.table-tiny th,
+.table-tiny td {
+  padding-left: 7px;
+  padding-right: 7px;
+  /* text-align: center; */
+}

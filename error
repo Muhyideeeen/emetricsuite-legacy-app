@@ -1,0 +1,4 @@
+remove (password validation)
+create some validation on creating Objective:
+                e.g:    
+                    a user should not be able to upload duplicate perpctive
